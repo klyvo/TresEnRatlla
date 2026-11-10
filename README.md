@@ -98,11 +98,7 @@ org.proven.tresenrattla/
 4. **Actualització d'Estat**: El `MutableStateFlow` emet el nou `BoardModel`.
 5. **Recomposició**: La funció composable `GameScreen`, que observa l'estat amb `collectAsState()`, rep la nova instància de `BoardModel` i redibuixa automàticament les caselles afectades i l'indicador de torn/guanyador.
 
-### Captura / Funcionament de l'aplicació
-
-*(Podeu adjuntar aquí una captura o GIF de l'aplicació en funcionament al repositori de GitHub)*
-
-![Captura de pantalla de l'aplicació Tres en Ratlla](docs/app_screenshot.png)
+### Funcionament de l'aplicació
 
 - **Torn inicial**: Comença el jugador "X".
 - **Comprovació automàtica**: Quan 3 caselles consecutives tenen el mateix símbol, es mostra el missatge de guanyador i es bloquegen les caselles.
