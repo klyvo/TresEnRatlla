@@ -58,3 +58,84 @@ Aquesta aplicació és una implementació del joc del **Tres en Ratlla** en Andr
 - **Elecció per a l'aplicació i justificació**:
   - Per a aquesta aplicació s'ha escollit **`StateFlow` / `MutableStateFlow` al ViewModel**, que es converteix en un `State<T>` de Compose mitjançant **`collectAsState()` a la Vista**.
   - **Justificació**: Aquesta és la millor pràctica recomanada per Google. Permet mantenir la capa de ViewModel completament independent del framework de UI (Jetpack Compose), facilitant les proves unitàries i seguint una separació neta de responsabilitats. A més, exposar `boardState: StateFlow<BoardModel>` protegit d'un `_boardState: MutableStateFlow` privat garanteix la immutabilitat de l'estat des de fora del ViewModel.
+
+---
+
+## 2. Explicació de l’arquitectura utilitzada al Tres en Ratlla
+
+L'aplicació segueix estrictament el patró **MVVM amb model separat (`MVVM-separatModel`)**. L'estructura del projecte s'organitza en tres paquets principals dins de `org.proven.tresenrattla`:
+
+```
+org.proven.tresenrattla/
+├── model/
+│   ├── CellModel.kt      # Dades immutables d'una casella (id, posició, símbol "X"/"O"/buida)
+│   └── BoardModel.kt     # Estat del tauler i lògica pura del joc (makeMove, checkWinner, .copy())
+├── viewmodel/
+│   └── GameViewModel.kt  # Gestor d'estat UI amb MutableStateFlow privat i asStateFlow() públic
+└── ui/
+    └── GameScreen.kt     # Pantalla Compose (GameScreen, BoardGrid amb LazyVerticalGrid, CellItemView)
+```
+
+### Flux de dades unidericcional (Unidirectional Data Flow - UDF):
+
+```
++-------------------------------------------------------------------------+
+|                                                                         |
+|  [ User Action: Click Cell ] ----> GameViewModel.onCellClick(position)  |
+|                                                     |                   |
+|                                                     v                   |
+|                                          BoardModel.makeMove(position)  |
+|                                                     |                   |
+|                                                     v                   |
+|  [ UI Recomposition ] <--- collectAsState() <--- StateFlow (New Board)  |
+|                                                                         |
++-------------------------------------------------------------------------+
+```
+
+1. **Usuari (UI)**: Fa clic sobre una casella del tauler.
+2. **Event**: La vista crida a `viewModel.onCellClick(position)`.
+3. **Lògica de Negoci (Model)**: El `GameViewModel` executa `_boardState.value.makeMove(position)`, que genera un nou `BoardModel` immutable utilitzant `.copy()`.
+4. **Actualització d'Estat**: El `MutableStateFlow` emet el nou `BoardModel`.
+5. **Recomposició**: La funció composable `GameScreen`, que observa l'estat amb `collectAsState()`, rep la nova instància de `BoardModel` i redibuixa automàticament les caselles afectades i l'indicador de torn/guanyador.
+
+### Captura / Funcionament de l'aplicació
+
+*(Podeu adjuntar aquí una captura o GIF de l'aplicació en funcionament al repositori de GitHub)*
+
+![Captura de pantalla de l'aplicació Tres en Ratlla](docs/app_screenshot.png)
+
+- **Torn inicial**: Comença el jugador "X".
+- **Comprovació automàtica**: Quan 3 caselles consecutives tenen el mateix símbol, es mostra el missatge de guanyador i es bloquegen les caselles.
+- **Empat**: Si el tauler s'omple sense guanyador, es mostra "Empat! Partida finalitzada".
+- **Reinici**: El botó "Reiniciar Partida" restableix el tauler a l'estat inicial mitjançant `BoardModel.createInitialBoard()`.
+
+---
+
+## 3. Conceptes i Mètodes Apresos
+
+En el desenvolupament d'aquesta pràctica s'han aplicat i après els següents mètodes, funcions i conceptes claus d'Android, Kotlin i Jetpack Compose:
+
+| Concepte / Mètode | Descripció i Utilitat |
+| :--- | :--- |
+| **`collectAsState()`** | Funció d'extensió de Compose que subscriu un Composable a un `StateFlow` o `Flow` i el reconverteix en un `State<T>` de Compose. Permet que la UI es recompongui automàticament cada vegada que s'emet un nou estat des del ViewModel. |
+| **`asStateFlow()`** | Mètode de Kotlin Coroutines utilitzat per convertir un `MutableStateFlow` privat en un `StateFlow` de només lectura. Protegeix l'estat per evitar modificacions directes fora del ViewModel. |
+| **`LazyVerticalGrid`** | Component composable per organitzar elements en una graella bidimensional. Utilitzat amb `GridCells.Fixed(3)` per construir eficientment el tauler de 3x3 del joc. |
+| **`.copy()`** | Mètode generat automàticament per les `data class` de Kotlin. Permet crear una nova instància d'un objecte modificant només certs paràmetres i mantenint la resta intactes, elemental per treballar amb estat immutable. |
+| **`viewModel()`** | Funció composable del paquet `androidx.lifecycle.viewmodel.compose` que proporciona la instància adequada de `ViewModel` associada al cicle de vida de la pantalla o activitat. |
+| **`MutableStateFlow`** | Flux de dades (*StateFlow*) mutable que emet valors observables i manté l'estat actual a la memòria. Actua com la font d'estat reactiva al ViewModel. |
+| **`CardDefaults.cardColors()`** | Funció de Material 3 per personalitzar dinàmicament els colors de fons i contingut dels contenidors `Card` segons l'estat del joc (torn, guanyador o empat). |
+
+---
+
+## 4. Gestió del Repositori i Commits (Git & GitHub)
+
+El projecte es gestiona al repositori públic de GitHub: **`Android-MVVM-TicTacToe`**.
+
+### Historial de Commits recomanat:
+- `feat: inicialitza l'estructura del projecte i tema Material3`
+- `feat: crea CellModel i BoardModel immutable amb createInitialBoard()`
+- `feat: implementa la lògica pura de makeMove() i checkWinner() en BoardModel`
+- `feat: crea GameViewModel amb MutableStateFlow i asStateFlow()`
+- `feat: dissenya la UI amb GameScreen, BoardGrid i CellItemView en Jetpack Compose`
+- `test: afegeix proves unitàries per a la lògica de BoardModel`
+- `docs: afegeix anàlisi MVVM i documentació completa al README.md`

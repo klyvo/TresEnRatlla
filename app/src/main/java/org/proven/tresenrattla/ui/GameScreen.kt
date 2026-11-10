@@ -38,18 +38,25 @@ import org.proven.tresenrattla.model.CellModel
 import org.proven.tresenrattla.viewmodel.GameViewModel
 
 /**
- * Pantalla principal de la interfície d'usuari (UI) del Tres en Ratlla.
+ * Pantalla principal de la interfície d'usuari (UI) del Tres en Ratlla construïda amb Jetpack Compose.
  *
- * @param viewModel Instància del [GameViewModel] injectada o creada mitjançant [viewModel].
+ * @Composable: Anotació indispensable de Jetpack Compose que indica que aquesta funció dibuixa un element visual
+ * de manera declarativa.
+ *
+ * @param viewModel Instància del [GameViewModel]. La funció viewModel() de Compose s'encarrega d'obtenir o crear
+ * la instància vinculada al cicle de vida de la pantalla.
  */
 @Composable
 fun GameScreen(
     viewModel: GameViewModel = viewModel()
 ) {
-    // collectAsState(): Subscriu la Composable als canvis del StateFlow del ViewModel
-    // i reconverteix l'estat en un State<BoardModel> de Compose que provoca la recomposició.
+    // collectAsState(): Subscriu la funció Composable al StateFlow del ViewModel.
+    // 'by' (Property Delegation): Permet accedir directament a les propietats de BoardModel
+    // sense haver d'escriure boardState.value. Cada vegada que el StateFlow emet un nou valor,
+    // Compose executa la RECOMPOSICIÓ d'aquesta pantalla per reflectir els canvis a la UI.
     val boardState by viewModel.boardState.collectAsState()
 
+    // Surface: Contenidor base de Material Design 3 per aplicar color de fons i elevació.
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -73,7 +80,7 @@ fun GameScreen(
             // Indicador visual de l'estat del joc (torn actual o resultat final)
             GameStatusIndicator(boardState = boardState)
 
-            // Tauler de 3x3
+            // Tauler de 3x3 construït amb la graella eficient BoardGrid
             BoardGrid(
                 cells = boardState.cells,
                 onCellClick = viewModel::onCellClick
@@ -101,10 +108,11 @@ fun GameScreen(
 }
 
 /**
- * Indicador que mostra visualment quin és el torn actual o quin és el resultat final.
+ * Indicador que mostra visualment quin és el torn actual o el resultat final (guanyador/empat).
  */
 @Composable
 fun GameStatusIndicator(boardState: BoardModel) {
+    // Card: Contenidor visual de Material 3 amb fons acolorit dinàmicament segons l'estat del joc
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -146,20 +154,20 @@ fun GameStatusIndicator(boardState: BoardModel) {
 }
 
 /**
- * Graella de 3x3 que conté les 9 caselles del tauler construïda amb LazyVerticalGrid.
+ * Graella de 3x3 que conté les 9 caselles del tauler.
  */
 @Composable
 fun BoardGrid(
     cells: List<CellModel>,
     onCellClick: (Int) -> Unit
 ) {
-    // LazyVerticalGrid: Component eficient de Compose per organitzar elements en graelles.
-    // GridCells.Fixed(3) defineix exactament 3 columnes.
+    // LazyVerticalGrid: Component eficient de Compose per organitzar elements en graelles bidimensionals.
+    // GridCells.Fixed(3): Defineix una estructura de graella amb exactament 3 columnes d'amplada igual.
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1f)
+            .aspectRatio(1f) // Força a que el tauler mantingui una relació d'aspecte quadrada (1:1)
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(8.dp),
@@ -167,6 +175,7 @@ fun BoardGrid(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         userScrollEnabled = false
     ) {
+        // items(): Recorre la llista de caselles i assigna la clau cel·la.id per optimitzar la recomposició
         items(
             items = cells,
             key = { cell -> cell.id }
@@ -190,6 +199,7 @@ fun CellItemView(
     Card(
         modifier = Modifier
             .aspectRatio(1f)
+            // clickable(): Habilita l'esdeveniment de clic només si la casella està buida (cell.symbol.isEmpty())
             .clickable(
                 enabled = cell.symbol.isEmpty(),
                 onClick = onCellClick
